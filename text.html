@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ניסוי Outplayer PWA</title>
+    <!-- הגדרות בסיסיות ל-PWA במובייל -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #121212;
+            color: #ffffff;
+            padding: 20px;
+            margin: 0;
+            text-align: center;
+        }
+        .container {
+            max-width: 500px;
+            margin: 40px auto;
+            background: #1e1e1e;
+            padding: 24px;
+            border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+        }
+        button {
+            background-color: #e50914;
+            color: white;
+            border: none;
+            padding: 14px 24px;
+            font-size: 18px;
+            font-weight: bold;
+            border-radius: 8px;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 15px;
+        }
+        button:active {
+            background-color: #b20710;
+        }
+        .log-box {
+            background: #2a2a2a;
+            padding: 12px;
+            border-radius: 8px;
+            text-align: left;
+            direction: ltr;
+            font-family: monospace;
+            margin-top: 20px;
+            font-size: 14px;
+            min-height: 80px;
+            max-height: 150px;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h2>בדיקת אינטגרציה עם Outplayer</h2>
+        <p>לחץ כדי לשלוח וידאו לנגן ולבדוק את קליטת נתוני ה-Callback.</p>
+        
+        <button onclick="launchPlayer()">הפעל ב-Outplayer</button>
+
+        <div class="log-box" id="logBox">
+            סטטוס: מחכה לפעולה...
+        </div>
+    </div>
+
+    <script>
+        // בדיקה האם העמוד נפתח מחדש בעקבות חזרה מ-Outplayer עם נתונים
+        window.onload = function() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const position = urlParams.get('position');
+            const duration = urlParams.get('duration');
+            const videoUrl = urlParams.get('url');
+
+            if (position !== null) {
+                const logText = `התקבלו נתונים בחזרה מ-Outplayer!\n- מיקום עצירה: ${Math.floor(position)} שניות\n- סך הכל משך: ${Math.floor(duration)} שניות`;
+                document.getElementById('logBox').innerText = logText;
+                console.log(logText);
+                
+                // כאן תוכל לשמור את המשתנה ב-localStorage או לשלוח לשרת שלך
+                localStorage.setItem('last_position', position);
+            } else {
+                // בדיקה האם יש שמירה קודמת בזיכרון המקומי
+                const savedPos = localStorage.getItem('last_position');
+                if (savedPos) {
+                    document.getElementById('logBox').innerText = `נמצאה עצירה קודמת בזיכרון: שניה ${savedPos}`;
+                }
+            }
+        };
+
+        function launchPlayer() {
+            // כתובת הוידאו לבדיקה (סרטון דוגמה ציבורי)
+            const videoToPlay = "http://docs.evostream.com/sample_content/assets/nosound.mp4";
+            
+            // כתובת החזרה הנוכחית של העמוד הזה (לשם Outplayer תחזיר את התוצאות)
+            const callbackUrl = window.location.href.split('?')[0];
+
+            // בניית מבנה הקישור המלא לפי התיעוד של Outplayer
+            // outplayer://x-callback-url/play?url=...&x-cancel=...&position=...
+            const encodedVideoUrl = encodeURIComponent(videoToPlay);
+            const encodedCallback = encodeURIComponent(callbackUrl);
+            
+            // אם נשמרה בעבר נקודת עצירה, נרצה להתחיל ממנה (Resume)
+            const savedPos = localStorage.getItem('last_position') || 0;
+
+            const outplayerScheme = `outplayer://x-callback-url/play?url=${encodedVideoUrl}&position=${savedPos}&x-cancel=${encodedCallback}`;
+
+            document.getElementById('logBox').innerText = "שולח בקשה ל-Outplayer...";
+            
+            // פתיחת הסכימה באייפון
+            window.location.href = outplayerScheme;
+        }
+    </script>
+</body>
+</html>
